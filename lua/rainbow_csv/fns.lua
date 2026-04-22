@@ -20,17 +20,17 @@ if vim.g.rcsv_max_columns ~= nil then
 	max_columns = vim.g.rcsv_max_columns
 end
 
-local rb_storage_dir = vim.env.HOME .. '/.rainbow_csv_storage'
+local rb_storage_dir = vim.fn.stdpath('data') .. '/rainbow_csv_storage'
 if vim.g.rb_storage_dir ~= nil then
 	rb_storage_dir = vim.g.rb_storage_dir
 end
 
-local table_names_settings = vim.env.HOME .. '/.rbql_table_names'
+local table_names_settings = vim.fn.stdpath('data') .. '/rbql_table_names'
 if vim.g.table_names_settings ~= nil then
 	table_names_settings = vim.g.table_names_settings
 end
 
-local rainbow_table_index = vim.env.HOME .. '/.rbql_table_index'
+local rainbow_table_index = vim.fn.stdpath('data') .. '/rbql_table_index'
 if vim.g.rainbow_table_index ~= nil then
 	rainbow_table_index = vim.g.rainbow_table_index
 end
@@ -474,6 +474,14 @@ M.ft_to_dialect = function(ft_val)
 end
 
 M.ensure_syntax_exists = function(rainbow_ft, delim, policy, comment_prefix)
+	local plugin_syntax_path = script_folder_path .. '/syntax/' .. rainbow_ft .. '.vim'
+	if vim.fn.filereadable(plugin_syntax_path) == 1 then
+		return plugin_syntax_path
+	end
+	local storage_syntax_path = rb_storage_dir .. '/syntax/' .. rainbow_ft .. '.vim'
+	if vim.fn.filereadable(storage_syntax_path) == 1 then
+		return storage_syntax_path
+	end
 	local syntax_lines = {}
 	if policy == 'quoted' then
 		syntax_lines = M.generate_escaped_rainbow_syntax(delim)
@@ -490,8 +498,12 @@ M.ensure_syntax_exists = function(rainbow_ft, delim, policy, comment_prefix)
 		local regex_comment_prefix = lua_escape(comment_prefix, magic_chars)
 		table.insert(syntax_lines, 'syntax match Comment /^' .. regex_comment_prefix .. '.*$/')
 	end
-	local syntax_file_path = script_folder_path .. '/syntax/' .. rainbow_ft .. '.vim'
-	vim.fn.writefile(syntax_lines, syntax_file_path)
+	local syntax_dir = rb_storage_dir .. '/syntax'
+	if vim.fn.isdirectory(syntax_dir) == 0 then
+		vim.fn.mkdir(syntax_dir, 'p')
+	end
+	vim.fn.writefile(syntax_lines, storage_syntax_path)
+	return storage_syntax_path
 end
 
 M.generate_named_dialects = function()
@@ -1955,10 +1967,14 @@ end
 
 M.set_rainbow_filetype = function(delim, policy, comment_prefix)
 	local rainbow_ft = M.dialect_to_ft(delim, policy, comment_prefix)
+	local syntax_path = nil
 	if rainbow_ft:find('rcsv', 1, true) ~= nil then
-		M.ensure_syntax_exists(rainbow_ft, delim, policy, comment_prefix)
+		syntax_path = M.ensure_syntax_exists(rainbow_ft, delim, policy, comment_prefix)
 	end
 	M.do_set_rainbow_filetype(rainbow_ft)
+	if syntax_path ~= nil then
+		vim.cmd.source(vim.fn.fnameescape(syntax_path))
+	end
 end
 
 M.buffer_disable_rainbow_features = function()
