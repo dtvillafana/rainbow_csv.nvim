@@ -41,12 +41,14 @@ M.setup = function()
 	mkcmd('Update', function(param) fns.run_update_cmd_query(param.args) end, { nargs = '+' })
 	mkcmd('RainbowName', function(param) fns.set_table_name_for_buffer(param.args) end, { nargs = 1 })
 
-	vim.api.nvim_create_augroup('RainbowInitAuGrp', { clear = true })
+	local augroup = vim.api.nvim_create_augroup('RainbowInitAuGrp', { clear = true })
 	vim.api.nvim_create_autocmd('Syntax', {
+		group = augroup,
 		pattern = '*',
 		callback = fns.handle_syntax_change,
 	})
 	vim.api.nvim_create_autocmd('BufEnter', {
+		group = augroup,
 		pattern = '*',
 		callback = fns.handle_buffer_enter,
 	})

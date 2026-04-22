@@ -2018,7 +2018,7 @@ M.buffer_enable_rainbow_features = function()
 		group = vim.api.nvim_create_augroup('RainbowHintGrp', { clear = true }),
 		pattern = '<buffer>',
 		callback = function()
-			if vim.g.disable_rainbow_hover == nil or vim.g.disable_rainbow_hover == false then
+			if vim.g.disable_rainbow_hover == nil or vim.g.disable_rainbow_hover == 0 then
 				M.provide_column_info_on_hover()
 			end
 		end
